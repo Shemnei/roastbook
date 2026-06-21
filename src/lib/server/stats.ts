@@ -40,7 +40,11 @@ export const getRecentShots = createServerFn({ method: "GET" })
         limit,
         orderBy: (shots, { desc }) => [desc(shots.createdAt)],
         with: {
-          bean: true,
+          bean: {
+            with: {
+              images: true,
+            },
+          },
           tasteTags: {
             with: {
               tasteTag: true,

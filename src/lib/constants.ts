@@ -36,4 +36,22 @@ export const GEAR_TYPE_LABELS: Record<GearType, string> = Object.fromEntries(
   GEAR_TYPES.map((t) => [t.value, t.label])
 ) as Record<GearType, string>
 
+export const DRINK_TYPES = [
+  "Espresso",
+  "Doppio",
+  "Ristretto",
+  "Lungo",
+  "Americano",
+  "Latte",
+  "Cappuccino",
+  "Flat White",
+  "Cortado",
+  "Macchiato",
+  "Mocha",
+  "Pour Over",
+  "Filter",
+  "Cold Brew",
+  "Iced Coffee",
+  "Other",
+] as const
 

@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { useEffect, useState, useMemo } from "react"
-import { ArrowLeft, Trash2, Archive, ArchiveRestore, Pencil, Plus } from "lucide-react"
+import { ArrowLeft, Trash2, Archive, ArchiveRestore, Pencil, Plus, Search, ImageIcon, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
-import { getBean, deleteBean, updateBean } from "@/lib/server/beans"
+import { getBean, deleteBean, updateBean, extractBeanInfo, researchBeanInfo, checkVisionEnabled, checkResearchEnabled } from "@/lib/server/beans"
 import { getShotsByBean } from "@/lib/server/shots"
 import { getRoasters } from "@/lib/server/roasters"
 import { ShotsTable } from "@/components/ShotsTable"
@@ -13,20 +13,24 @@ import { ShotParameterCharts } from "@/components/shot-parameter-charts"
 import { DeleteConfirmation } from "@/components/DeleteConfirmation"
 import { EntityImageGallery } from "@/components/entity-image-gallery"
 import { InputField, SelectField, TextareaField } from "@/components/FormField"
+import { BeanInfoDiffModal, type BeanFormData } from "@/components/BeanInfoDiffModal"
 import { toast } from "sonner"
 import { RouteError } from "@/components/route-error"
 import { DetailPending } from "@/components/route-pending"
 import { ROAST_LEVELS, PROCESS_METHODS, type RoastLevel } from "@/lib/constants"
+import type { ExtractedBeanInfo } from "@/lib/ai"
 
 export const Route = createFileRoute("/beans/$beanId")({
   loader: async ({ params }) => {
     const beanId = Number(params.beanId)
-    const [bean, shots, roasters] = await Promise.all([
+    const [bean, shots, roasters, visionEnabled, researchEnabled] = await Promise.all([
       getBean({ data: beanId }),
       getShotsByBean({ data: beanId }),
       getRoasters(),
+      checkVisionEnabled(),
+      checkResearchEnabled(),
     ])
-    return { bean, shots, roasters }
+    return { bean, shots, roasters, visionEnabled: visionEnabled.enabled, researchEnabled: researchEnabled.enabled }
   },
   component: BeanDetailPage,
   pendingComponent: DetailPending,
@@ -64,11 +68,16 @@ function getInitialFormData(bean: NonNullable<ReturnType<typeof Route.useLoaderD
 }
 
 function BeanDetailPage() {
-  const { bean, shots, roasters } = Route.useLoaderData()
+  const { bean, shots, roasters, visionEnabled, researchEnabled } = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isResearching, setIsResearching] = useState(false)
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [diffModalOpen, setDiffModalOpen] = useState(false)
+  const [suggestedData, setSuggestedData] = useState<ExtractedBeanInfo | null>(null)
+  const [aiSource, setAiSource] = useState<"image" | "web">("web")
 
   const roasterOptions = roasters.map((r) => ({ value: String(r.id), label: r.name }))
   const currentRoaster = bean?.roasterRef ?? null
@@ -176,6 +185,85 @@ function BeanDetailPage() {
     }
   }
 
+  const handleResearchOnline = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Enter a bean name first")
+      return
+    }
+
+    setIsResearching(true)
+    try {
+      const roasterName = formData.roasterId
+        ? roasters.find((r) => String(r.id) === formData.roasterId)?.name
+        : undefined
+      const result = await researchBeanInfo({
+        data: { beanName: formData.name, roasterName },
+      })
+
+      if (Object.keys(result).length === 0) {
+        toast.error("No information found")
+        return
+      }
+
+      setSuggestedData(result)
+      setAiSource("web")
+      setDiffModalOpen(true)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Research failed"
+      toast.error(message)
+    } finally {
+      setIsResearching(false)
+    }
+  }
+
+  const handleExtractFromImage = async () => {
+    if (!bean?.images.length) {
+      toast.error("No images to extract from")
+      return
+    }
+
+    const thumbnailImage = bean.images.find((img) => img.isThumbnail) || bean.images[0]
+    const baseUrl = import.meta.env.VITE_STORAGE_URL || "/uploads"
+    const imageUrl = `${baseUrl}/${thumbnailImage.storagePath}`
+
+    setIsExtracting(true)
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string
+          resolve(dataUrl.split(",")[1])
+        }
+        reader.readAsDataURL(blob)
+      })
+
+      const result = await extractBeanInfo({
+        data: { imageBase64: base64, mimeType: blob.type },
+      })
+
+      if (Object.keys(result).length === 0) {
+        toast.error("Couldn't extract any information")
+        return
+      }
+
+      setSuggestedData(result)
+      setAiSource("image")
+      setDiffModalOpen(true)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Extraction failed"
+      toast.error(message)
+    } finally {
+      setIsExtracting(false)
+    }
+  }
+
+  const handleApplyDiff = (updates: Partial<BeanFormData>) => {
+    setFormData((prev) => ({ ...prev, ...updates }))
+    toast.success(`Applied ${Object.keys(updates).length} changes`)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start gap-4">
@@ -270,7 +358,8 @@ function BeanDetailPage() {
       </div>
 
       {isEditing ? (
-        <>
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          <div className="space-y-6">
            <Card>
              <CardHeader>
                <CardTitle>Basic Info</CardTitle>
@@ -442,36 +531,87 @@ function BeanDetailPage() {
              </CardContent>
            </Card>
 
-           <Card>
-             <CardHeader>
-               <CardTitle>Notes</CardTitle>
-             </CardHeader>
-             <CardContent>
-               <TextareaField
-                 id="notes"
-                 label=""
-                 placeholder="Tasting notes, brewing tips, or other observations"
-                 value={formData.notes}
-                 onChange={(value) =>
-                   setFormData({ ...formData, notes: value })
-                 }
-                 rows={4}
-               />
-             </CardContent>
-           </Card>
-        </>
-      ) : (
-        <>
-          {bean.images.length > 0 && (
-            <EntityImageGallery
-              entityType="beans"
-              entityId={bean.id}
-              images={bean.images}
-              baseUrl={import.meta.env.VITE_STORAGE_URL || "/uploads"}
-              onImagesChange={() => router.invalidate()}
-            />
-          )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TextareaField
+                  id="notes"
+                  label=""
+                  placeholder="Tasting notes, brewing tips, or other observations"
+                  value={formData.notes}
+                  onChange={(value) =>
+                    setFormData({ ...formData, notes: value })
+                  }
+                  rows={4}
+                />
+              </CardContent>
+            </Card>
+          </div>
 
+          <div className="space-y-6">
+            {bean.images.length > 0 && (
+              <EntityImageGallery
+                entityType="beans"
+                entityId={bean.id}
+                images={bean.images}
+                baseUrl={import.meta.env.VITE_STORAGE_URL || "/uploads"}
+                onImagesChange={() => router.invalidate()}
+              />
+            )}
+
+            {(visionEnabled || researchEnabled) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Tools</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-2">
+                    {visionEnabled && bean.images.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExtractFromImage}
+                        disabled={isExtracting || isResearching}
+                        className="w-full justify-start"
+                      >
+                        {isExtracting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ImageIcon className="h-4 w-4" />
+                        )}
+                        Fill from image
+                      </Button>
+                    )}
+                    {researchEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResearchOnline}
+                        disabled={isResearching || isExtracting || !formData.name.trim()}
+                        className="w-full justify-start"
+                      >
+                        {isResearching ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4" />
+                        )}
+                        Research online
+                      </Button>
+                    )}
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Use AI to find or extract bean information. Review suggestions before applying.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          <div className="space-y-6">
           {weightStats && (
             <Card>
               <CardHeader>
@@ -590,7 +730,21 @@ function BeanDetailPage() {
               </CardContent>
             </Card>
           )}
-        </>
+          </div>
+
+          {bean.images.length > 0 && (
+            <div className="space-y-6">
+              <EntityImageGallery
+                entityType="beans"
+                entityId={bean.id}
+                images={bean.images}
+                baseUrl={import.meta.env.VITE_STORAGE_URL || "/uploads"}
+                onImagesChange={() => router.invalidate()}
+                readOnly
+              />
+            </div>
+          )}
+        </div>
       )}
 
       <ShotParameterCharts shots={shots} />
@@ -603,6 +757,17 @@ function BeanDetailPage() {
           <ShotsTable shots={shots} hideBean />
         </CardContent>
       </Card>
+
+      {suggestedData && (
+        <BeanInfoDiffModal
+          open={diffModalOpen}
+          onOpenChange={setDiffModalOpen}
+          currentData={formData}
+          suggestedData={suggestedData}
+          onApply={handleApplyDiff}
+          source={aiSource}
+        />
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Star, Trash2, X } from "lucide-react"
+import { Star, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,6 +30,7 @@ interface EntityImageGalleryProps {
   images: EntityImage[]
   baseUrl: string
   onImagesChange: () => void
+  readOnly?: boolean
 }
 
 export function EntityImageGallery({
@@ -38,6 +39,7 @@ export function EntityImageGallery({
   images,
   baseUrl,
   onImagesChange,
+  readOnly = false,
 }: EntityImageGalleryProps) {
   const [isSettingThumbnail, setIsSettingThumbnail] = useState<number | null>(null)
   const [isDeletingImage, setIsDeletingImage] = useState<number | null>(null)
@@ -86,52 +88,46 @@ export function EntityImageGallery({
                 decoding="async"
                 width={640}
                 height={640}
-                className={cn(
-                  "aspect-square w-full rounded-lg object-cover",
-                  image.isThumbnail && "ring-2 ring-primary ring-offset-2"
-                )}
+                className="aspect-square w-full rounded-lg object-cover"
               />
-              <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                <Button
-                  size="icon"
-                  variant={image.isThumbnail ? "default" : "secondary"}
-                  className="h-8 w-8"
-                  onClick={() => handleSetThumbnail(image.id)}
-                  disabled={isSettingThumbnail === image.id || image.isThumbnail}
-                  title={image.isThumbnail ? "Current thumbnail" : "Set as thumbnail"}
-                >
-                  <Star className={cn("h-4 w-4", image.isThumbnail && "fill-current")} />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="h-8 w-8"
-                      disabled={isDeletingImage === image.id}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleDeleteImage(image)}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-              {image.isThumbnail && (
-                <div className="absolute top-2 left-2 rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
-                  Thumbnail
+              {!readOnly && (
+                <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Button
+                    size="icon"
+                    variant={image.isThumbnail ? "default" : "secondary"}
+                    className="h-8 w-8"
+                    onClick={() => handleSetThumbnail(image.id)}
+                    disabled={isSettingThumbnail === image.id || image.isThumbnail}
+                    title={image.isThumbnail ? "Current thumbnail" : "Set as thumbnail"}
+                  >
+                    <Star className={cn("h-4 w-4", image.isThumbnail && "fill-current")} />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-8 w-8"
+                        disabled={isDeletingImage === image.id}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteImage(image)}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               )}
             </div>

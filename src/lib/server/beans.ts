@@ -4,7 +4,9 @@ import { beans } from "@/db/schema"
 import { eq, desc } from "drizzle-orm"
 import {
   isVisionEnabled,
+  isResearchEnabled,
   extractBeanInfoFromImage,
+  researchBeanFromWeb,
   type ExtractedBeanInfo,
 } from "@/lib/ai"
 
@@ -123,4 +125,25 @@ export const extractBeanInfo = createServerFn({ method: "POST" })
       throw new Error("OpenAI vision is not configured")
     }
     return extractBeanInfoFromImage(data.imageBase64, data.mimeType)
+  })
+
+export const checkResearchEnabled = createServerFn({ method: "GET" }).handler(
+  async () => {
+    return { enabled: isResearchEnabled() }
+  }
+)
+
+export const researchBeanInfo = createServerFn({ method: "POST" })
+  .validator((data: { beanName: string; roasterName?: string }) => data)
+  .handler(async ({ data }): Promise<ExtractedBeanInfo> => {
+    if (!isResearchEnabled()) {
+      throw new Error("OpenAI research is not configured")
+    }
+
+    console.info("[Bean research] request", {
+      beanName: data.beanName,
+      roasterName: data.roasterName ?? null,
+    })
+
+    return researchBeanFromWeb(data.beanName, data.roasterName)
   })

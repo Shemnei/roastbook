@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { getDashboardStats, getRecentShots } from "@/lib/server/stats"
 import { RouteError } from "@/components/route-error"
 import { RoutePending } from "@/components/route-pending"
+import { thumbnailUrl } from "@/lib/image-url"
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -83,34 +84,45 @@ function Dashboard() {
                 </Button>
               </div>
             ) : (
-              recentShots.map((shot) => (
-                <Link
-                  key={shot.id}
-                  to="/shots/$shotId"
-                  params={{ shotId: String(shot.id) }}
-                  className="flex items-center gap-3.5 rounded-2xl bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
-                >
-                  <BeanSwatch seed={shot.id} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-base font-bold text-foreground">
-                      {shot.bean?.name ?? "Unknown beans"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {shot.doseGrams && shot.yieldGrams
-                        ? `${shot.doseGrams}g → ${shot.yieldGrams}g`
-                        : "No recipe recorded"}
-                      {shot.brewTimeSeconds
-                        ? ` · ${shot.brewTimeSeconds}s`
-                        : ""}
-                    </p>
-                  </div>
-                  {shot.rating && (
-                    <div className="shrink-0 rounded-xl bg-card px-3 py-1.5 font-display text-sm font-bold text-primary">
-                      {shot.rating.toFixed(1)}★
+              recentShots.map((shot) => {
+                const beanImage = shot.bean?.images?.[0]
+                return (
+                  <Link
+                    key={shot.id}
+                    to="/shots/$shotId"
+                    params={{ shotId: String(shot.id) }}
+                    className="flex items-center gap-3.5 rounded-2xl bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
+                  >
+                    {beanImage ? (
+                      <img
+                        src={thumbnailUrl("/uploads", beanImage.storagePath)}
+                        alt=""
+                        className="h-11 w-11 shrink-0 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <BeanSwatch seed={shot.id} />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-display text-base font-bold text-foreground">
+                        {shot.bean?.name ?? "Unknown beans"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {shot.doseGrams && shot.yieldGrams
+                          ? `${shot.doseGrams}g → ${shot.yieldGrams}g`
+                          : "No recipe recorded"}
+                        {shot.brewTimeSeconds
+                          ? ` · ${shot.brewTimeSeconds}s`
+                          : ""}
+                      </p>
                     </div>
-                  )}
-                </Link>
-              ))
+                    {shot.rating && (
+                      <div className="shrink-0 rounded-xl bg-card px-3 py-1.5 font-display text-sm font-bold text-primary">
+                        {shot.rating.toFixed(1)}★
+                      </div>
+                    )}
+                  </Link>
+                )
+              })
             )}
           </CardContent>
         </Card>

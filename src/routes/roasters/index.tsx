@@ -1,8 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { Plus, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { getRoasters } from "@/lib/server/roasters"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
@@ -17,8 +25,11 @@ export const Route = createFileRoute("/roasters/")({
   ),
 })
 
+type Roaster = Awaited<ReturnType<typeof getRoasters>>[number]
+
 function RoastersPage() {
   const roasters = Route.useLoaderData()
+  const navigate = useNavigate()
 
   return (
     <div className="space-y-6">
@@ -48,45 +59,65 @@ function RoastersPage() {
           actionHref="/roasters/new"
         />
       ) : (
-        <div className="@container">
-          <div className="grid gap-4 @sm:grid-cols-2 @lg:grid-cols-3">
-            {roasters.map((roaster) => (
-              <RoasterCard key={roaster.id} roaster={roaster} />
-            ))}
-          </div>
-        </div>
+        <Card>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead className="text-right">Beans</TableHead>
+                  <TableHead>Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {roasters.map((roaster) => (
+                  <RoasterRow
+                    key={roaster.id}
+                    roaster={roaster}
+                    onSelect={() =>
+                      navigate({
+                        to: "/roasters/$roasterId",
+                        params: { roasterId: String(roaster.id) },
+                      })
+                    }
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
 }
 
-function RoasterCard({ roaster }: { roaster: Awaited<ReturnType<typeof getRoasters>>[number] }) {
+function RoasterRow({
+  roaster,
+  onSelect,
+}: {
+  roaster: Roaster
+  onSelect: () => void
+}) {
   const beanCount = roaster.beans?.length ?? 0
+  const location = [roaster.location, roaster.country].filter(Boolean).join(", ")
 
   return (
-    <Link to="/roasters/$roasterId" params={{ roasterId: String(roaster.id) }}>
-      <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base line-clamp-1">{roaster.name}</CardTitle>
-            {beanCount > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {beanCount} bean{beanCount !== 1 ? "s" : ""}
-              </Badge>
-            )}
-          </div>
-          {roaster.location && (
-            <p className="text-sm text-muted-foreground">
-              {roaster.location}{roaster.country ? `, ${roaster.country}` : ""}
-            </p>
-          )}
-        </CardHeader>
-        <CardContent>
-          {roaster.notes && (
-            <p className="text-sm text-muted-foreground line-clamp-2">{roaster.notes}</p>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+    <TableRow className="cursor-pointer" onClick={onSelect}>
+      <TableCell className="font-display font-bold text-foreground">
+        {roaster.name}
+      </TableCell>
+      <TableCell className="text-muted-foreground">{location || "—"}</TableCell>
+      <TableCell className="text-right">
+        {beanCount > 0 ? (
+          <Badge variant="secondary">{beanCount}</Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell className="max-w-[420px] truncate text-muted-foreground">
+        {roaster.notes || "—"}
+      </TableCell>
+    </TableRow>
   )
 }

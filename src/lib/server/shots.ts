@@ -7,7 +7,11 @@ export const getShots = createServerFn({ method: "GET" }).handler(async () => {
   return db.query.shots.findMany({
     orderBy: [desc(shots.createdAt)],
     with: {
-      bean: true,
+      bean: {
+        with: {
+          images: true,
+        },
+      },
       recipe: {
         with: {
           gear: {

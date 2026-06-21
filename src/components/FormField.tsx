@@ -121,6 +121,8 @@ export function SelectField({
   onChange,
   options,
 }: SelectFieldProps) {
+  const selectedOption = options.find((option) => option.value === value)
+
   return (
     <div className={cn("space-y-2", className)}>
       <Label htmlFor={id}>
@@ -129,7 +131,9 @@ export function SelectField({
       </Label>
       <Select value={value} onValueChange={(v) => onChange(v ?? "")} disabled={disabled}>
         <SelectTrigger id={id}>
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={placeholder}>
+            {selectedOption?.label}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
