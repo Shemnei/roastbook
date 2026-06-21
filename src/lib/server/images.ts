@@ -9,6 +9,7 @@ import {
 } from "@/db/schema"
 import { eq, and } from "drizzle-orm"
 import { getStorage, generateStoragePath } from "@/lib/storage"
+import { generateAndUploadThumbnail, getThumbnailPath } from "@/lib/server/thumbnails"
 
 type EntityType = "beans" | "gear" | "places" | "shots" | "visits"
 type ThumbnailEntityType = "beans" | "gear"
@@ -45,6 +46,7 @@ export const uploadEntityImage = createServerFn({ method: "POST" })
     const blob = new Blob([binaryData], { type: data.mimeType })
 
     await storage.upload(blob, storagePath)
+    await generateAndUploadThumbnail(binaryData, storagePath)
 
     const baseValues = {
       storagePath,
@@ -129,6 +131,11 @@ export const deleteEntityImage = createServerFn({ method: "POST" })
     const storage = getStorage()
 
     await storage.delete(data.storagePath)
+    try {
+      await storage.delete(getThumbnailPath(data.storagePath))
+    } catch {
+      // Thumbnail may not exist for older uploads — ignore.
+    }
 
     switch (data.entityType) {
       case "beans":

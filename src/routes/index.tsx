@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Coffee, Bean, Cog, MapPin, UtensilsCrossed, Plus, Star } from "lucide-react"
+import { Bean, Cog, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getDashboardStats, getRecentShots } from "@/lib/server/stats"
@@ -19,165 +19,205 @@ export const Route = createFileRoute("/")({
   errorComponent: ({ error }) => <RouteError error={error} />,
 })
 
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+})
+
 function Dashboard() {
   const { stats, recentShots } = Route.useLoaderData()
+  const today = dateFormatter.format(new Date())
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome to your coffee journal
-          </p>
-        </div>
-        <Button asChild>
-          <Link to="/shots/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Log Shot
-          </Link>
-        </Button>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+      <header className="space-y-1">
+        <p className="text-sm font-semibold text-muted-foreground">{today}</p>
+        <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+          Let's brew something good
+        </h1>
+      </header>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <QuickStatCard
-          title="Total Shots"
-          value={String(stats.totalShots)}
-          description="espresso shots logged"
-          icon={Coffee}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <HeroStatCard
+          value={stats.totalShots}
+          label="espresso shots logged"
           href="/shots"
         />
-        <QuickStatCard
-          title="Active Beans"
-          value={String(stats.activeBeans)}
-          description="bags in rotation"
-          icon={Bean}
+        <StatCard
+          value={stats.activeBeans}
+          label="bags in rotation"
           href="/beans"
         />
-        <QuickStatCard
-          title="Gear"
-          value={String(stats.gearCount)}
-          description="pieces of equipment"
-          icon={Cog}
+        <StatCard
+          value={stats.gearCount}
+          label="pieces of equipment"
           href="/gear"
         />
-        <QuickStatCard
-          title="Cafe Visits"
-          value={String(stats.cafeVisits)}
-          description="coffees out"
-          icon={UtensilsCrossed}
+        <StatCard
+          value={stats.cafeVisits}
+          label="coffees out"
           href="/visits"
         />
-      </div>
+      </section>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+      <section className="grid gap-5 lg:grid-cols-[1fr_340px]">
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Shots</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recent shots</CardTitle>
+            <Link
+              to="/shots"
+              className="font-display text-sm font-bold text-primary hover:underline"
+            >
+              View all
+            </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             {recentShots.length === 0 ? (
-              <>
+              <div className="rounded-2xl bg-secondary px-5 py-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No shots logged yet. Start by logging your first espresso!
+                  No shots logged yet. Start by logging your first espresso.
                 </p>
-                <Button variant="outline" className="mt-4" asChild>
+                <Button className="mt-4" asChild>
                   <Link to="/shots/new">Log your first shot</Link>
                 </Button>
-              </>
-            ) : (
-              <div className="space-y-3">
-                {recentShots.map((shot) => (
-                  <Link
-                    key={shot.id}
-                    to="/shots/$shotId"
-                    params={{ shotId: String(shot.id) }}
-                    className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">
-                        {shot.bean?.name ?? "Unknown beans"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {shot.doseGrams && shot.yieldGrams
-                          ? `${shot.doseGrams}g → ${shot.yieldGrams}g`
-                          : "No recipe recorded"}
-                        {shot.brewTimeSeconds
-                          ? ` · ${Math.floor(shot.brewTimeSeconds / 60)}:${String(shot.brewTimeSeconds % 60).padStart(2, "0")}`
-                          : ""}
-                      </p>
-                    </div>
-                    {shot.rating && (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Star className="h-3 w-3 fill-current" />
-                        {shot.rating}
-                      </div>
-                    )}
-                  </Link>
-                ))}
-                <Button variant="outline" size="sm" className="w-full mt-2" asChild>
-                  <Link to="/shots">View all shots</Link>
-                </Button>
               </div>
+            ) : (
+              recentShots.map((shot) => (
+                <Link
+                  key={shot.id}
+                  to="/shots/$shotId"
+                  params={{ shotId: String(shot.id) }}
+                  className="flex items-center gap-3.5 rounded-2xl bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
+                >
+                  <BeanSwatch seed={shot.id} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-base font-bold text-foreground">
+                      {shot.bean?.name ?? "Unknown beans"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {shot.doseGrams && shot.yieldGrams
+                        ? `${shot.doseGrams}g → ${shot.yieldGrams}g`
+                        : "No recipe recorded"}
+                      {shot.brewTimeSeconds
+                        ? ` · ${shot.brewTimeSeconds}s`
+                        : ""}
+                    </p>
+                  </div>
+                  {shot.rating && (
+                    <div className="shrink-0 rounded-xl bg-card px-3 py-1.5 font-display text-sm font-bold text-primary">
+                      {shot.rating.toFixed(1)}★
+                    </div>
+                  )}
+                </Link>
+              ))
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>Quick add</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2">
-            <Button variant="outline" className="justify-start" asChild>
-              <Link to="/beans/new">
-                <Bean className="mr-2 h-4 w-4" />
-                Add new beans
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link to="/gear/new">
-                <Cog className="mr-2 h-4 w-4" />
-                Add gear
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link to="/places/new">
-                <MapPin className="mr-2 h-4 w-4" />
-                Add a cafe
-              </Link>
-            </Button>
+          <CardContent className="space-y-2.5">
+            <QuickAddRow icon={Bean} label="Add beans" href="/beans/new" />
+            <QuickAddRow icon={Cog} label="Add gear" href="/gear/new" />
+            <QuickAddRow icon={MapPin} label="Add a café" href="/places/new" />
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   )
 }
 
-function QuickStatCard({
-  title,
+function HeroStatCard({
   value,
-  description,
-  icon: Icon,
+  label,
   href,
 }: {
-  title: string
-  value: string
-  description: string
-  icon: React.ComponentType<{ className?: string }>
+  value: number
+  label: string
   href: string
 }) {
   return (
-    <Link to={href}>
-      <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
+    <Link to={href} className="block">
+      <div className="rounded-3xl bg-coffee p-6 text-coffee-foreground shadow-[0_10px_30px_-18px_rgba(60,42,30,0.55)] transition-transform hover:-translate-y-0.5">
+        <div className="font-display text-5xl font-extrabold leading-none">
+          {value}
+        </div>
+        <div className="mt-2 text-sm font-semibold text-coffee-foreground/80">
+          {label}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+function StatCard({
+  value,
+  label,
+  href,
+}: {
+  value: number
+  label: string
+  href: string
+}) {
+  return (
+    <Link to={href} className="block">
+      <Card className="transition-transform hover:-translate-y-0.5">
         <CardContent>
-          <div className="text-2xl font-bold">{value}</div>
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <div className="font-display text-5xl font-extrabold leading-none text-foreground">
+            {value}
+          </div>
+          <div className="mt-2 text-sm font-semibold text-muted-foreground">
+            {label}
+          </div>
         </CardContent>
       </Card>
     </Link>
+  )
+}
+
+function QuickAddRow({
+  icon: Icon,
+  label,
+  href,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  href: string
+}) {
+  return (
+    <Link
+      to={href}
+      className="flex items-center gap-3 rounded-2xl border border-border bg-secondary px-4 py-3 transition-colors hover:bg-accent/70"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="font-display text-base font-bold text-foreground">
+        {label}
+      </span>
+    </Link>
+  )
+}
+
+function BeanSwatch({ seed }: { seed: number }) {
+  const palettes = [
+    ["#b07a45", "#6f4e37"],
+    ["#7a4e2e", "#3f2614"],
+    ["#a06a3e", "#523019"],
+    ["#9a6a3e", "#5c3a22"],
+    ["#8a5a30", "#452916"],
+  ] as const
+  const [light, dark] = palettes[seed % palettes.length]
+  return (
+    <div
+      aria-hidden
+      className="h-11 w-11 shrink-0 rounded-xl"
+      style={{
+        background: `radial-gradient(circle at 35% 30%, ${light}, ${dark})`,
+      }}
+    />
   )
 }

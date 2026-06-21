@@ -1,9 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Plus, UtensilsCrossed } from "lucide-react"
+import { Plus, UtensilsCrossed, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { StarRating } from "@/components/ui/star-rating"
 import { EmptyState } from "@/components/EmptyState"
 import { getCafeVisits } from "@/lib/server/cafe-visits"
 import { RouteError } from "@/components/route-error"
@@ -18,25 +15,34 @@ export const Route = createFileRoute("/visits/")({
   ),
 })
 
+type Visit = Awaited<ReturnType<typeof getCafeVisits>>[number]
+
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+})
+
 function VisitsPage() {
   const visits = Route.useLoaderData()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-7xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Cafe Visits</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+            Café visits
+          </h1>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
             Your coffee experiences out and about
           </p>
         </div>
         <Button asChild>
           <Link to="/visits/new" search={{ placeId: undefined }}>
-            <Plus className="mr-2 h-4 w-4" />
-            Log Visit
+            <Plus className="h-4 w-4" />
+            Log a visit
           </Link>
         </Button>
-      </div>
+      </header>
 
       {visits.length === 0 ? (
         <EmptyState
@@ -48,59 +54,92 @@ function VisitsPage() {
           actionSearch={{ placeId: undefined }}
         />
       ) : (
-        <div className="@container">
-          <div className="grid gap-4 @sm:grid-cols-2 @lg:grid-cols-3">
-            {visits.map((visit) => (
-              <Link key={visit.id} to="/visits/$visitId" params={{ visitId: String(visit.id) }}>
-                <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base line-clamp-1">
-                        {visit.drinkName || "Coffee"}
-                      </CardTitle>
-                      {visit.rating && (
-                        <StarRating value={visit.rating} readOnly sizeClassName="size-4" />
-                      )}
-                    </div>
-                    {visit.place && (
-                      <p className="text-sm text-muted-foreground">
-                        {visit.place.name}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(visit.visitedAt).toLocaleDateString()}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    {visit.drinkType && (
-                      <Badge variant="outline" className="text-xs mb-2">
-                        {visit.drinkType}
-                      </Badge>
-                    )}
-                    {visit.bean && (
-                      <p className="text-sm text-muted-foreground">Beans: {visit.bean.name}</p>
-                    )}
-                    {visit.price && (
-                      <p className="text-sm text-muted-foreground">
-                        {visit.currency || "EUR"} {visit.price}
-                      </p>
-                    )}
-                    {visit.tasteTags && visit.tasteTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {visit.tasteTags.slice(0, 3).map((tt) => (
-                          <Badge key={tt.id} variant="outline" className="text-xs">
-                            {tt.tasteTag.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {visits.map((visit) => (
+            <VisitCard key={visit.id} visit={visit} />
+          ))}
         </div>
       )}
     </div>
+  )
+}
+
+function VisitCard({ visit }: { visit: Visit }) {
+  const date = dateFormatter.format(new Date(visit.visitedAt))
+  const positiveTags = visit.tasteTags?.filter((tt) => tt.tasteTag.category !== "negative") ?? []
+  const negativeTags = visit.tasteTags?.filter((tt) => tt.tasteTag.category === "negative") ?? []
+
+  return (
+    <Link
+      to="/visits/$visitId"
+      params={{ visitId: String(visit.id) }}
+      className="block rounded-3xl bg-card p-5 shadow-[0_8px_24px_-18px_rgba(60,42,30,0.45)] transition-transform hover:-translate-y-0.5"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg font-bold text-foreground">
+            {visit.drinkName || "Coffee"}
+          </p>
+          <p className="mt-0.5 truncate text-sm text-muted-foreground">
+            {visit.place?.name ?? "Unknown café"} · {date}
+          </p>
+        </div>
+        {visit.drinkType && (
+          <span className="shrink-0 rounded-xl bg-coffee px-2.5 py-1 text-xs font-bold text-coffee-foreground">
+            {visit.drinkType}
+          </span>
+        )}
+      </div>
+
+      {visit.rating != null && (
+        <div className="mt-3 flex items-center gap-0.5 text-primary">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star
+              key={n}
+              className="h-4 w-4"
+              fill={n <= visit.rating! ? "currentColor" : "transparent"}
+              strokeWidth={1.5}
+            />
+          ))}
+        </div>
+      )}
+
+      {(visit.bean || visit.price) && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          {visit.bean && (
+            <>
+              Bean: <span className="font-bold text-foreground">{visit.bean.name}</span>
+            </>
+          )}
+          {visit.bean && visit.price && " · "}
+          {visit.price && (
+            <span className="font-bold text-foreground">
+              {(visit.currency || "EUR")} {visit.price}
+            </span>
+          )}
+        </p>
+      )}
+
+      {(positiveTags.length > 0 || negativeTags.length > 0) && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {positiveTags.slice(0, 4).map((tt) => (
+            <span
+              key={tt.id}
+              className="rounded-xl bg-[#EAF0DC] px-2.5 py-1 text-xs font-semibold text-[#6B8A3D]"
+            >
+              {tt.tasteTag.name}
+            </span>
+          ))}
+          {negativeTags.slice(0, 2).map((tt) => (
+            <span
+              key={tt.id}
+              className="rounded-xl bg-[#F8E2DA] px-2.5 py-1 text-xs font-semibold text-[#C0573A]"
+            >
+              {tt.tasteTag.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </Link>
   )
 }

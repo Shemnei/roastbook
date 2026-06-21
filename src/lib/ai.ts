@@ -1,18 +1,12 @@
-import OpenAI from "openai"
+import { chat, type StreamChunk } from "@tanstack/ai"
+import { openaiChatCompletions } from "@tanstack/ai-openai"
 
 const apiKey = process.env.OPENAI_API_KEY
-
-const openai = apiKey
-  ? new OpenAI({
-      apiKey,
-      baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
-    })
-  : null
-
+const baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
 const visionModel = process.env.OPENAI_VISION_MODEL || "gpt-4o"
 
 export function isVisionEnabled(): boolean {
-  return openai !== null
+  return !!apiKey
 }
 
 export interface ExtractedBeanInfo {
@@ -32,16 +26,11 @@ export async function extractBeanInfoFromImage(
   imageBase64: string,
   mimeType: string = "image/jpeg"
 ): Promise<ExtractedBeanInfo> {
-  if (!openai) {
+  if (!apiKey) {
     return {}
   }
 
-  const response = await openai.chat.completions.create({
-    model: visionModel,
-    messages: [
-      {
-        role: "system",
-        content: `You are a coffee expert assistant. Extract coffee bean information from product images (bags, labels, packaging).
+  const systemPrompt = `You are a coffee expert assistant. Extract coffee bean information from product images (bags, labels, packaging).
 Return a JSON object with the following fields (omit fields if not visible/readable):
 - name: the coffee name/blend name
 - roaster: the roasting company name
@@ -54,29 +43,47 @@ Return a JSON object with the following fields (omit fields if not visible/reada
 - roastDate: roast date in ISO format (YYYY-MM-DD) if visible
 - notes: ALL flavor descriptions, tasting notes, and flavor profiles go here. Format as "Tasting notes: [notes]" if tasting notes are found. Include any cupping scores, SCA scores, or quality descriptors.
 
-Only include fields where you can clearly read the information. Do not guess.`,
+Only include fields where you can clearly read the information. Do not guess.
+Return ONLY valid JSON, no markdown code blocks.`
+
+  const stream = chat({
+    adapter: openaiChatCompletions(visionModel, apiKey, { baseURL }),
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
       },
       {
         role: "user",
         content: [
           {
-            type: "image_url",
-            image_url: {
-              url: `data:${mimeType};base64,${imageBase64}`,
+            type: "image",
+            source: {
+              type: "data",
+              value: imageBase64,
+              mimeType,
             },
           },
           {
             type: "text",
-            text: "Extract the coffee bean information from this image.",
+            content: "Extract the coffee bean information from this image.",
           },
         ],
       },
     ],
-    response_format: { type: "json_object" },
-    max_tokens: 1000,
+    modelOptions: {
+      response_format: { type: "json_object" },
+      max_tokens: 1000,
+    },
   })
 
-  const content = response.choices[0]?.message?.content
+  let content = ""
+  for await (const chunk of stream) {
+    if (chunk.type === "text") {
+      content += chunk.content
+    }
+  }
+
   if (!content) {
     return {}
   }
@@ -87,5 +94,3 @@ Only include fields where you can clearly read the information. Do not guess.`,
     return {}
   }
 }
-
-

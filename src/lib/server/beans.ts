@@ -6,7 +6,7 @@ import {
   isVisionEnabled,
   extractBeanInfoFromImage,
   type ExtractedBeanInfo,
-} from "@/lib/openai"
+} from "@/lib/ai"
 
 export const getBeans = createServerFn({ method: "GET" }).handler(async () => {
   return db.query.beans.findMany({

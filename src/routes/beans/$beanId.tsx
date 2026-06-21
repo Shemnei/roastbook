@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { useEffect, useState, useMemo } from "react"
-import { ArrowLeft, Trash2, Archive, ArchiveRestore, Pencil } from "lucide-react"
+import { ArrowLeft, Trash2, Archive, ArchiveRestore, Pencil, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -177,76 +177,96 @@ function BeanDetailPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+    <div className="mx-auto max-w-5xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+      <div className="flex flex-wrap items-start gap-4">
+        <Button variant="outline" size="icon" asChild className="shrink-0">
           <Link to="/beans">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{isEditing ? formData.name || bean.name : bean.name}</h1>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
+              {isEditing ? formData.name || bean.name : bean.name}
+            </h1>
             {bean.isArchived && (
               <Badge variant="secondary">Archived</Badge>
             )}
           </div>
           {isEditing ? (
             formData.roasterId && roasters.find((r) => String(r.id) === formData.roasterId) && (
-              <p className="text-muted-foreground">
-                {roasters.find((r) => String(r.id) === formData.roasterId)?.name}
+              <p className="mt-1 text-sm text-muted-foreground">
+                by{" "}
+                <span className="font-bold text-primary">
+                  {roasters.find((r) => String(r.id) === formData.roasterId)?.name}
+                </span>
               </p>
             )
           ) : currentRoaster ? (
-            <Link to="/roasters/$roasterId" params={{ roasterId: String(currentRoaster.id) }} className="text-muted-foreground hover:underline">
-              {currentRoaster.name}
-            </Link>
+            <p className="mt-1 text-sm text-muted-foreground">
+              by{" "}
+              <Link
+                to="/roasters/$roasterId"
+                params={{ roasterId: String(currentRoaster.id) }}
+                className="font-bold text-primary hover:underline"
+              >
+                {currentRoaster.name}
+              </Link>
+            </p>
           ) : bean.roaster ? (
-            <p className="text-muted-foreground">{bean.roaster}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              by <span className="font-bold text-primary">{bean.roaster}</span>
+            </p>
           ) : null}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleToggleArchive}
-        >
-          {bean.isArchived ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleToggleArchive}>
+            {bean.isArchived ? (
+              <>
+                <ArchiveRestore className="h-4 w-4" />
+                Unarchive
+              </>
+            ) : (
+              <>
+                <Archive className="h-4 w-4" />
+                Archive
+              </>
+            )}
+          </Button>
+          {isEditing ? (
             <>
-              <ArchiveRestore className="h-4 w-4 mr-2" />
-              Unarchive
+              <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={isSaving || !formData.name.trim()}>
+                {isSaving ? "Saving…" : "Save"}
+              </Button>
             </>
           ) : (
             <>
-              <Archive className="h-4 w-4 mr-2" />
-              Archive
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/shots/new" search={{ beanId: bean.id }}>
+                  <Plus className="h-4 w-4" />
+                  Log a shot
+                </Link>
+              </Button>
             </>
           )}
-        </Button>
-        {isEditing ? (
-          <>
-            <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSaving || !formData.name.trim()}>
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </>
-        ) : (
-          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        )}
-        <DeleteConfirmation
-          title="Delete this bean?"
-          description="This will also remove it from any shot records. This action cannot be undone."
-          onConfirm={handleDelete}
-          trigger={
-            <Button variant="ghost" size="icon">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          }
-        />
+          <DeleteConfirmation
+            title="Delete this bean?"
+            description="This will also remove it from any shot records. This action cannot be undone."
+            onConfirm={handleDelete}
+            trigger={
+              <Button variant="ghost" size="icon-sm" aria-label="Delete bean">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {isEditing ? (
@@ -572,19 +592,6 @@ function BeanDetailPage() {
           )}
         </>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-2">
-          <Button asChild>
-            <Link to="/shots/new" search={{ beanId: bean.id }}>
-              Log a shot with these beans
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
 
       <ShotParameterCharts shots={shots} />
 
