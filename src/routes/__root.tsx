@@ -143,7 +143,10 @@ function RootComponent() {
     <TooltipProvider>
       <div className="min-h-screen flex flex-col">
         <AppNavbar />
-        <main id="main-content" className="flex-1 p-4 pb-20 md:pb-4">
+        <main
+          id="main-content"
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8"
+        >
           <Outlet />
         </main>
       </div>

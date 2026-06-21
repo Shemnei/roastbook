@@ -26,7 +26,7 @@ function VisitsPage() {
   const visits = Route.useLoaderData()
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">

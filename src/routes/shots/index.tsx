@@ -22,20 +22,22 @@ function ShotsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Shots</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+            Shots
+          </h1>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
             Your espresso shot history
           </p>
         </div>
         <Button asChild>
           <Link to="/shots/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Log Shot
+            <Plus className="h-4 w-4" />
+            Log a shot
           </Link>
         </Button>
-      </div>
+      </header>
 
       {shots.length === 0 ? (
         <EmptyState

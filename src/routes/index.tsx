@@ -30,7 +30,7 @@ function Dashboard() {
   const today = dateFormatter.format(new Date())
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+    <div className="space-y-6">
       <header className="space-y-1">
         <p className="text-sm font-semibold text-muted-foreground">{today}</p>
         <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">

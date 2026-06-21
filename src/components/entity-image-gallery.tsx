@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/dialog"
 import { setImageAsThumbnail, deleteEntityImage } from "@/lib/server/images"
+import { thumbnailUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
 
 interface EntityImage {
@@ -69,8 +70,6 @@ export function EntityImageGallery({
     }
   }
 
-  const getImageUrl = (storagePath: string) => `${baseUrl}/${storagePath}`
-
   return (
     <Card>
       <CardHeader>
@@ -81,8 +80,12 @@ export function EntityImageGallery({
           {images.map((image) => (
             <div key={image.id} className="group relative">
               <img
-                src={getImageUrl(image.storagePath)}
+                src={thumbnailUrl(baseUrl, image.storagePath)}
                 alt=""
+                loading="lazy"
+                decoding="async"
+                width={640}
+                height={640}
                 className={cn(
                   "aspect-square w-full rounded-lg object-cover",
                   image.isThumbnail && "ring-2 ring-primary ring-offset-2"

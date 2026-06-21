@@ -177,7 +177,7 @@ function BeanDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start gap-4">
         <Button variant="outline" size="icon" asChild className="shrink-0">
           <Link to="/beans">

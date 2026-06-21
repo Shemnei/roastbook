@@ -10,6 +10,7 @@ import { getBeans } from "@/lib/server/beans"
 import { RouteError } from "@/components/route-error"
 import { ListPending } from "@/components/route-pending"
 import { EmptyState } from "@/components/EmptyState"
+import { thumbnailUrl } from "@/lib/image-url"
 
 export const Route = createFileRoute("/beans/")({
   loader: () => getBeans(),
@@ -44,7 +45,7 @@ function BeansPage() {
   const archivedBeans = beans.filter((b) => b.isArchived)
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
@@ -147,8 +148,12 @@ function BeanCard({ bean }: { bean: Bean }) {
       >
         {thumbnail && (
           <img
-            src={`${baseUrl}/${thumbnail.storagePath}`}
+            src={thumbnailUrl(baseUrl, thumbnail.storagePath)}
             alt=""
+            loading="lazy"
+            decoding="async"
+            width={640}
+            height={400}
             className="h-full w-full object-cover"
           />
         )}

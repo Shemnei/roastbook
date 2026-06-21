@@ -93,10 +93,14 @@ function StatsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Statistics</h1>
-        <p className="text-muted-foreground">Your coffee journey at a glance</p>
-      </div>
+      <header>
+        <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+          Statistics
+        </h1>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">
+          Your coffee journey at a glance
+        </p>
+      </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

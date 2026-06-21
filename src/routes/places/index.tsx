@@ -28,20 +28,22 @@ function PlacesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Places</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+            Places
+          </h1>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
             Cafes and coffee spots
           </p>
         </div>
         <Button asChild>
           <Link to="/places/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Place
+            <Plus className="h-4 w-4" />
+            Add a place
           </Link>
         </Button>
-      </div>
+      </header>
 
       {places.length === 0 ? (
         <EmptyState

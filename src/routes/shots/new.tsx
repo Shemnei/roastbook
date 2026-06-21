@@ -145,7 +145,7 @@ function NewShotPage() {
   const flow = timerSeconds > 0 && yieldG > 0 ? yieldG / timerSeconds : 0
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-2 py-4 md:px-6 md:py-8">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild className="shrink-0">
           <Link to="/shots">
