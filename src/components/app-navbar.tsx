@@ -4,7 +4,6 @@ import {
   Coffee,
   Bean,
   Cog,
-  MapPin,
   UtensilsCrossed,
   Home,
   Store,

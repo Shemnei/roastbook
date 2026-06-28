@@ -169,9 +169,9 @@ function BeanCard({ bean }: { bean: Bean }) {
       <div className="space-y-3 px-5 py-4">
         <div>
           <p className="font-display text-lg font-bold text-foreground">{bean.name}</p>
-          {(bean.roasterRef?.name || bean.roaster) && (
+          {bean.roaster && (
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {bean.roasterRef?.name ?? bean.roaster}
+              {bean.roaster}
             </p>
           )}
         </div>

@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { StarRating } from "@/components/ui/star-rating"
 import { InputField, TextareaField } from "@/components/FormField"
 import { getActiveBeans } from "@/lib/server/beans"
