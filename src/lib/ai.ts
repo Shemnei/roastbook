@@ -1,11 +1,34 @@
 import { chat } from "@tanstack/ai"
-import { openaiChatCompletions, openaiText } from "@tanstack/ai-openai"
+import {
+  OPENAI_CHAT_MODELS,
+  createOpenaiChat,
+  type OpenAIChatModel,
+} from "@tanstack/ai-openai"
 import { webSearchTool } from "@tanstack/ai-openai/tools"
 
 const apiKey = process.env.OPENAI_API_KEY
 const baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"
-const visionModel = process.env.OPENAI_VISION_MODEL || "gpt-4o"
-const researchModel = process.env.OPENAI_RESEARCH_MODEL || "gpt-4o"
+function isOpenAIChatModel(model: string): model is OpenAIChatModel {
+  return (OPENAI_CHAT_MODELS as ReadonlyArray<string>).includes(model)
+}
+
+function resolveModel(
+  envValue: string | undefined,
+  fallback: OpenAIChatModel,
+): OpenAIChatModel {
+  return envValue && isOpenAIChatModel(envValue) ? envValue : fallback
+}
+
+const visionModel = resolveModel(process.env.OPENAI_VISION_MODEL, "gpt-4o")
+const researchModel = resolveModel(process.env.OPENAI_RESEARCH_MODEL, "gpt-4o")
+
+function createAdapter(model: OpenAIChatModel) {
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured")
+  }
+
+  return createOpenaiChat(model, apiKey, { baseURL })
+}
 
 export function isVisionEnabled(): boolean {
   return !!apiKey
@@ -52,13 +75,10 @@ Return a JSON object with the following fields (omit fields if not visible/reada
 Only include fields where you can clearly read the information. Do not guess.
 Return ONLY valid JSON, no markdown code blocks.`
 
-  const stream = chat({
-    adapter: openaiChatCompletions(visionModel, apiKey, { baseURL }),
+  const content = await chat({
+    adapter: createAdapter(visionModel),
+    systemPrompts: [systemPrompt],
     messages: [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
       {
         role: "user",
         content: [
@@ -77,18 +97,8 @@ Return ONLY valid JSON, no markdown code blocks.`
         ],
       },
     ],
-    modelOptions: {
-      response_format: { type: "json_object" },
-      max_tokens: 1000,
-    },
+    stream: false,
   })
-
-  let content = ""
-  for await (const chunk of stream) {
-    if (chunk.type === "text") {
-      content += chunk.content
-    }
-  }
 
   if (!content) {
     return {}
@@ -135,32 +145,20 @@ Return a JSON object with the following fields (omit fields if you cannot find r
 Only include fields where you find reliable information from coffee roaster websites, coffee review sites, or specialty coffee databases.
 Return ONLY valid JSON, no markdown code blocks.`
 
-  const stream = chat({
-    adapter: openaiText(researchModel, apiKey, { baseURL }),
+  const content = await chat({
+    adapter: createAdapter(researchModel),
+    systemPrompts: [systemPrompt],
     messages: [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
       {
         role: "user",
         content: `Search for information about this coffee: "${searchQuery}"`,
       },
     ],
     tools: [webSearchTool({ type: "web_search" })],
+    stream: false,
   })
 
-  let content = ""
-  let chunkCount = 0
-  for await (const chunk of stream) {
-    chunkCount += 1
-    if (chunk.type === "TEXT_MESSAGE_CONTENT") {
-      content = chunk.content
-    }
-  }
-
   console.info("[AI research] stream complete", {
-    chunkCount,
     hasContent: content.length > 0,
     preview: content.slice(0, 300),
   })
