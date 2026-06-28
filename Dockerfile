@@ -25,8 +25,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 app
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid 1001 --create-home --shell /usr/sbin/nologin app
 
 # Copy built application
 COPY --from=builder --chown=app:nodejs /app/.output /app/.output
