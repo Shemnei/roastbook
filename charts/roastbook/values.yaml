@@ -77,10 +77,19 @@ tolerations: []
 affinity: {}
 
 postgresql:
-  host: ""
-  port: "5432"
-  database: "roastbook"
-  username: "roastbook"
+  # Enable bundled PostgreSQL subchart
+  enabled: true
+  auth:
+    database: "roastbook"
+    username: "roastbook"
+    # password: ""  # Set this or use existingSecret
+  primary:
+    persistence:
+      size: "5Gi"
+  # For external database (when enabled: false)
+  external:
+    host: ""
+    port: "5432"
   existingSecret: ""
   existingSecretKey: "url"
 
