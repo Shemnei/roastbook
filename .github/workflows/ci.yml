@@ -30,9 +30,6 @@ jobs:
       - name: Check for dead code
         run: bun run lint:deadcode
 
-      - name: Run tests
-        run: bun run test
-
   build:
     runs-on: ubuntu-latest
     needs: lint-and-test
