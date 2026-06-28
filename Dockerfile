@@ -28,11 +28,13 @@ ENV NODE_ENV=production
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid 1001 --create-home --shell /usr/sbin/nologin app
 
-# Copy built application
-COPY --from=builder --chown=app:nodejs /app/.output /app/.output
+# Copy runtime dependencies and built application
+COPY --from=builder --chown=app:nodejs /app/package.json /app/package.json
+COPY --from=builder --chown=app:nodejs /app/node_modules /app/node_modules
+COPY --from=builder --chown=app:nodejs /app/dist /app/dist
 
 USER app
 
 EXPOSE 3000
 
-CMD ["bun", "run", ".output/server/index.mjs"]
+CMD ["bun", "run", "dist/server/server.js"]
