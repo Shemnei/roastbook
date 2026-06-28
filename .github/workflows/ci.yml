@@ -27,6 +27,9 @@ jobs:
       - name: Type check
         run: bun run tsc --noEmit
 
+      - name: Check for dead code
+        run: bun run lint:deadcode
+
       - name: Run tests
         run: bun run test
 

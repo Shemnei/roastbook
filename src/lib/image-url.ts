@@ -4,10 +4,6 @@ function thumbnailPath(storagePath: string): string {
   return `${base}.thumb.webp`
 }
 
-export function imageUrl(baseUrl: string, storagePath: string): string {
-  return `${baseUrl}/${storagePath}`
-}
-
 export function thumbnailUrl(baseUrl: string, storagePath: string): string {
   return `${baseUrl}/${thumbnailPath(storagePath)}`
 }
