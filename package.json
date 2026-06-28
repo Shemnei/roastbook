@@ -1,6 +1,5 @@
 {
   "name": "roastbook",
-  "private": true,
   "type": "module",
   "imports": {
     "#/*": "./src/*"

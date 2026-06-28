@@ -78,7 +78,7 @@ affinity: {}
 
 postgresql:
   # Enable bundled PostgreSQL subchart
-  enabled: true
+  enabled: false
   auth:
     database: "roastbook"
     username: "roastbook"
@@ -88,6 +88,7 @@ postgresql:
       size: "5Gi"
   # For external database (when enabled: false)
   external:
+    url: ""
     host: ""
     port: "5432"
   existingSecret: ""

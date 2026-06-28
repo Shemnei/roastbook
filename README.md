@@ -17,6 +17,15 @@ A self-hosted coffee logging application for tracking espresso shots, cafe visit
 | Container | Docker (multi-stage, bun:1-slim) |
 | Orchestration | Kubernetes via Helm |
 
+## Features
+
+- **Espresso Shot Logging** — Track dose, yield, time, grind setting, and tasting notes for every shot
+- **Bean Management** — Catalog your coffee beans with roaster, origin, process, and roast level
+- **AI-Powered Label Scanning** — Extract bean info from bag photos using GPT-4o Vision
+- **Cafe Visits** — Log visits to coffee shops with location and notes
+- **Gear Inventory** — Keep track of your grinders, machines, and accessories
+- **Statistics & Charts** — Visualize your coffee journey over time
+
 ## Getting Started
 
 ```bash
@@ -61,14 +70,67 @@ docker run -p 3000:3000 \
 
 ## Helm Deployment
 
+### External PostgreSQL (default)
+
+The simplest path is to give the chart a full connection string and let it create
+the internal secret for you:
+
 ```bash
 helm install roastbook ./charts/roastbook \
   --set hodor.password="your-password" \
   --set hodor.secret="$(openssl rand -hex 32)" \
   --set image.tag="latest" \
-  --set postgresql.host="postgres.default.svc" \
-  --set postgresql.password="db-password"
+  --set postgresql.external.url="postgresql://roastbook:db-password@postgres.default.svc:5432/roastbook"
 ```
+
+If you prefer to keep the connection parts separate, the chart can still assemble
+the URL from host and auth values:
+
+```bash
+helm install roastbook ./charts/roastbook \
+  --set hodor.password="your-password" \
+  --set hodor.secret="$(openssl rand -hex 32)" \
+  --set image.tag="latest" \
+  --set postgresql.auth.username="roastbook" \
+  --set postgresql.auth.password="db-password" \
+  --set postgresql.auth.database="roastbook" \
+  --set postgresql.external.host="postgres.default.svc" \
+  --set postgresql.external.port="5432"
+```
+
+Roastbook defaults to an external PostgreSQL connection so chart users are not tied
+to a specific bundled database image source. This avoids surprising install failures
+when public image availability or registry policy changes upstream.
+
+If you already store a full `DATABASE_URL` in a Kubernetes secret, point the chart at it instead:
+
+```bash
+helm install roastbook ./charts/roastbook \
+  --set hodor.password="your-password" \
+  --set hodor.secret="$(openssl rand -hex 32)" \
+  --set image.tag="latest" \
+  --set postgresql.existingSecret="roastbook-db" \
+  --set postgresql.existingSecretKey="url"
+```
+
+### Bundled PostgreSQL (opt-in)
+
+If you want Roastbook to deploy PostgreSQL for you, enable the bundled subchart and
+set a database password explicitly:
+
+```bash
+helm install roastbook ./charts/roastbook \
+  --set hodor.password="your-password" \
+  --set hodor.secret="$(openssl rand -hex 32)" \
+  --set image.tag="latest" \
+  --set postgresql.enabled=true \
+  --set postgresql.auth.password="db-password"
+```
+
+The bundled database path intentionally leaves image selection configurable via the
+standard `postgresql.image.*` values inherited from the Bitnami subchart. If your
+environment cannot pull the Bitnami defaults, override `postgresql.image.repository`
+and `postgresql.image.tag` to a registry you control.
 
 See [charts/roastbook/values.yaml](charts/roastbook/values.yaml) for all configuration options.
 
