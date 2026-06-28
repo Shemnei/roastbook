@@ -23,7 +23,7 @@ export async function generateAndUploadThumbnail(
 
     const thumbPath = getThumbnailPath(storagePath)
     const storage = getStorage()
-    await storage.upload(new Blob([thumbBuffer], { type: "image/webp" }), thumbPath)
+    await storage.upload(new Blob([new Uint8Array(thumbBuffer)], { type: "image/webp" }), thumbPath)
     return thumbPath
   } catch (error) {
     console.warn(`Thumbnail generation failed for ${storagePath}:`, error)

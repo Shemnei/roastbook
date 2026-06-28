@@ -9,9 +9,26 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { thumbnailUrl } from "@/lib/image-url"
-import type { getShots } from "@/lib/server/shots"
 
-type Shot = Awaited<ReturnType<typeof getShots>>[number]
+type Shot = {
+  id: number
+  createdAt: Date
+  doseGrams: string | null
+  yieldGrams: string | null
+  brewTimeSeconds: number | null
+  rating: number | null
+  bean: {
+    id: number
+    name: string
+    images?: Array<{
+      storagePath: string
+      isThumbnail: boolean | null
+    }>
+  } | null
+  recipe: {
+    name: string
+  } | null
+}
 
 interface ShotsTableProps {
   shots: Shot[]

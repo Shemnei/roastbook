@@ -623,7 +623,9 @@ function BeanDetailPage() {
                     {weightStats.remainingWeight.toFixed(0)}g remaining
                   </ProgressLabel>
                   <ProgressValue>
-                    of {weightStats.initialWeight.toFixed(0)}g
+                    {(formattedValue) =>
+                      `${formattedValue ?? `${weightStats.percentRemaining}`}% of ${weightStats.initialWeight.toFixed(0)}g`
+                    }
                   </ProgressValue>
                 </Progress>
                 <p className="text-sm text-muted-foreground">
