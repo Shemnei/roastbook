@@ -118,15 +118,25 @@ spec:
             - name: PASSWORD
               valueFrom:
                 secretKeyRef:
+                  {{- if .Values.hodor.existingSecret }}
+                  name: {{ .Values.hodor.existingSecret }}
+                  key: {{ .Values.hodor.existingSecretPasswordKey }}
+                  {{- else }}
                   name: {{ include "roastbook.fullname" . }}-hodor
                   key: password
+                  {{- end }}
             - name: UPSTREAM
               value: "http://localhost:3000"
             - name: SECRET
               valueFrom:
                 secretKeyRef:
+                  {{- if .Values.hodor.existingSecret }}
+                  name: {{ .Values.hodor.existingSecret }}
+                  key: {{ .Values.hodor.existingSecretSecretKey }}
+                  {{- else }}
                   name: {{ include "roastbook.fullname" . }}-hodor
                   key: secret
+                  {{- end }}
             - name: TITLE
               value: {{ .Values.hodor.title | quote }}
             - name: SESSION_TTL

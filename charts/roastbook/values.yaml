@@ -82,7 +82,7 @@ postgresql:
   database: "roastbook"
   username: "roastbook"
   existingSecret: ""
-  existingSecretKey: "password"
+  existingSecretKey: "url"
 
 storage:
   provider: "local"
@@ -106,6 +106,9 @@ openai:
 
 hodor:
   enabled: true
+  existingSecret: ""
+  existingSecretPasswordKey: "password"
+  existingSecretSecretKey: "secret"
   image:
     repository: ghcr.io/michidk/hodor
     tag: latest

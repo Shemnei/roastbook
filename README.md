@@ -72,6 +72,8 @@ helm install roastbook ./charts/roastbook \
 
 See [charts/roastbook/values.yaml](charts/roastbook/values.yaml) for all configuration options.
 
+For Kubernetes environments that already manage secrets externally, set `postgresql.existingSecret` to a secret containing a full `DATABASE_URL` under the `url` key, and set `hodor.existingSecret` to a secret containing Hodor's `password` and `secret` keys.
+
 ## Environment Variables
 
 | Variable | Description | Required |
